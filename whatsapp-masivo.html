@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp Masivo - HTML Standalone</title>
+  <style>
+    :root{--bg:#3cbfb4;--card:#fff;--ink:#0d5256;--accent:#69bf4a;--accent2:#066165;--warn:#f6eab5;--line:#cfd455}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    .app{max-width:1200px;margin:auto;padding:16px}
+    .header{background:var(--accent2);color:#fff;padding:14px;border-radius:12px;margin-bottom:12px}
+    .alert{background:var(--warn);border:1px solid #c9b76f;padding:8px;border-radius:8px;margin-bottom:12px;display:none}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    input,textarea,button,select{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px}
+    input,textarea,select{flex:1}
+    textarea{min-height:90px}
+    button{background:var(--accent);color:#fff;cursor:pointer}
+    button.secondary{background:var(--accent2)}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .list{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;display:grid;gap:6px}
+    .list li{border:1px solid #dbe5c2;border-radius:8px;padding:6px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .stats{font-size:13px;margin:8px 0;display:flex;gap:8px;flex-wrap:wrap}
+    .tag{background:#eef7cf;border:1px solid var(--line);border-radius:20px;padding:2px 8px}
+    .help{font-size:12px;opacity:.85}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1 style="margin:0">💬 WhatsApp Masivo (HTML)</h1>
+      <p style="margin:6px 0 0">Versión standalone para usar, descargar respaldo y restaurar sin npm.</p>
+    </header>
+
+    <div id="alert" class="alert"></div>
+
+    <section class="grid">
+      <article class="card">
+        <h2>1) Contactos</h2>
+        <div class="row">
+          <input id="singleNumber" placeholder="Celular: 3001234567 o +573001234567" />
+          <input id="singleName" placeholder="Nombre" />
+          <input id="singleCompany" placeholder="Empresa" />
+          <button id="btnAdd">Agregar</button>
+        </div>
+
+        <textarea id="bulkText" placeholder="Empresa | Identificación | Nombre | Celular | Asesor\nEmpresa A | 123 | Laura | 3001112233 | Pedro"></textarea>
+        <div class="row">
+          <button id="btnImport">Importar texto</button>
+          <button id="btnSelectAll" class="secondary">Seleccionar todo</button>
+          <button id="btnUnselectAll" class="secondary">Quitar selección</button>
+        </div>
+
+        <div class="row">
+          <button id="btnDownloadBackup" class="secondary">⬇️ Descargar respaldo JSON</button>
+          <label class="secondary" style="display:inline-flex;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:#066165;color:#fff;cursor:pointer;">
+            ⬆️ Cargar respaldo
+            <input id="backupInput" type="file" accept=".json" style="display:none" />
+          </label>
+        </div>
+
+        <div class="stats">
+          <span class="tag">Total: <b id="stTotal">0</b></span>
+          <span class="tag">Seleccionados: <b id="stSel">0</b></span>
+          <span class="tag">Válidos: <b id="stValid">0</b></span>
+        </div>
+
+        <ul id="contacts" class="list"></ul>
+      </article>
+
+      <article class="card">
+        <h2>2) Mensaje y enlaces</h2>
+        <textarea id="template">Hola {nombre}, te saludo de {empresa}. ¿Te puedo compartir información para continuar tu protección?</textarea>
+        <p class="help">Variables: {nombre}, {empresa}, {identificacion}, {asesor}</p>
+
+        <div class="row">
+          <button id="btnGenerate">Generar enlaces</button>
+          <button id="btnCopy" class="secondary">Copiar enlaces</button>
+          <button id="btnExportLinks" class="secondary">Descargar enlaces CSV</button>
+        </div>
+
+        <div class="row">
+          <input id="interval" type="number" value="8" min="1" />
+          <button id="btnOpen">Abrir en secuencia</button>
+        </div>
+
+        <ul id="links" class="list"></ul>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+      <h3>Cómo descargar y usar (Windows)</h3>
+      <ol>
+        <li>Guarda este archivo como <b>whatsapp-masivo.html</b>.</li>
+        <li>Ábrelo con doble clic en Chrome/Edge (funciona sin instalar nada).</li>
+        <li>Carga tus datos, genera enlaces y usa <b>Descargar respaldo JSON</b> para guardar todo.</li>
+        <li>Cuando quieras continuar, usa <b>Cargar respaldo</b>.</li>
+      </ol>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      contacts: JSON.parse(localStorage.getItem('wa_html_contacts') || '[]'),
+      links: []
+    }
+
+    const $ = (id) => document.getElementById(id)
+    const alertEl = $('alert')
+
+    function show(msg){ alertEl.textContent = msg; alertEl.style.display='block'; setTimeout(()=> alertEl.style.display='none', 3500) }
+
+    function normalizePhone(value){
+      const raw = String(value||'').trim(); const hasPlus = raw.startsWith('+'); const digits = raw.replace(/\D/g,'')
+      if(!digits) return ''
+      if(hasPlus) return '+' + digits
+      if(digits.length===10) return '+57' + digits
+      if(digits.length===12 && digits.startsWith('57')) return '+' + digits
+      return '+' + digits
+    }
+
+    function validPhone(v){ return /^\+\d{8,16}$/.test(v) }
+
+    function personalize(t,c){
+      return t
+        .replace(/\{nombre\}/g, c.name||'')
+        .replace(/\{empresa\}/g, c.company||'')
+        .replace(/\{identificacion\}/g, c.identification||'')
+        .replace(/\{asesor\}/g, c.advisor||'')
+    }
+
+    function persist(){ localStorage.setItem('wa_html_contacts', JSON.stringify(state.contacts)) }
+
+    function renderStats(){
+      const total = state.contacts.length
+      const sel = state.contacts.filter(c=>c.selected).length
+      const valid = state.contacts.filter(c=>c.valid).length
+      $('stTotal').textContent = total
+      $('stSel').textContent = sel
+      $('stValid').textContent = valid
+    }
+
+    function renderContacts(){
+      const ul = $('contacts')
+      ul.innerHTML = ''
+      state.contacts.forEach((c, i)=>{
+        const li = document.createElement('li')
+        li.innerHTML = `
+          <div style="display:flex;gap:8px;align-items:center;min-width:0;">
+            <input type="checkbox" ${c.selected?'checked':''} data-i="${i}" class="chk" />
+            <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              <b>${c.number}</b> · ${c.name||'Sin nombre'} · ${c.company||'Sin empresa'} ${c.valid?'':'(inválido)'}
+            </div>
+          </div>
+          <button data-del="${i}" class="secondary">Eliminar</button>`
+        ul.appendChild(li)
+      })
+
+      ul.querySelectorAll('.chk').forEach(el=> el.addEventListener('change', (e)=>{
+        const i = Number(e.target.dataset.i); state.contacts[i].selected = e.target.checked; persist(); renderStats()
+      }))
+      ul.querySelectorAll('[data-del]').forEach(el=> el.addEventListener('click', (e)=>{
+        const i = Number(e.target.dataset.del); state.contacts.splice(i,1); persist(); renderContacts(); renderStats()
+      }))
+    }
+
+    function renderLinks(){
+      const ul = $('links'); ul.innerHTML=''
+      if(!state.links.length){ ul.innerHTML='<li>Aún no hay enlaces.</li>'; return }
+      state.links.forEach((l)=>{
+        const li = document.createElement('li')
+        li.innerHTML = `<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.number}</span>
+                        <a href="${l.url}" target="_blank">Abrir</a>`
+        ul.appendChild(li)
+      })
+    }
+
+    $('btnAdd').addEventListener('click', ()=>{
+      const number = normalizePhone($('singleNumber').value)
+      const valid = validPhone(number)
+      if(!valid){ show('Número inválido'); return }
+      if(state.contacts.some(c=>c.number===number)){ show('Número duplicado'); return }
+      state.contacts.push({ id: Date.now()+Math.random(), number, name:$('singleName').value.trim(), company:$('singleCompany').value.trim(), identification:'', advisor:'', selected:true, valid })
+      $('singleNumber').value=''; $('singleName').value=''; $('singleCompany').value=''
+      persist(); renderContacts(); renderStats(); show('Contacto agregado')
+    })
+
+    $('btnImport').addEventListener('click', ()=>{
+      const txt = $('bulkText').value.trim(); if(!txt){ show('No hay texto para importar'); return }
+      let added = 0
+      txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).forEach(line=>{
+        const [company='', identification='', name='', number='', advisor=''] = line.split('|').map(v=>v.trim())
+        const normalized = normalizePhone(number)
+        if(!validPhone(normalized)) return
+        if(state.contacts.some(c=>c.number===normalized)) return
+        state.contacts.push({ id: Date.now()+Math.random(), number: normalized, name, company, identification, advisor, selected:true, valid:true })
+        added++
+      })
+      $('bulkText').value=''
+      persist(); renderContacts(); renderStats(); show(`Importados: ${added}`)
+    })
+
+    $('btnSelectAll').addEventListener('click', ()=>{ state.contacts.forEach(c=>c.selected=true); persist(); renderContacts(); renderStats() })
+    $('btnUnselectAll').addEventListener('click', ()=>{ state.contacts.forEach(c=>c.selected=false); persist(); renderContacts(); renderStats() })
+
+    $('btnGenerate').addEventListener('click', ()=>{
+      const tpl = $('template').value
+      const selected = state.contacts.filter(c=>c.selected && c.valid)
+      state.links = selected.map(c=>{
+        const message = personalize(tpl,c)
+        const phoneDigits = c.number.replace(/\D/g,'')
+        return { number:c.number, url:`https://web.whatsapp.com/send?phone=${phoneDigits}&text=${encodeURIComponent(message)}` }
+      })
+      renderLinks(); show(`Enlaces generados: ${state.links.length}`)
+    })
+
+    $('btnCopy').addEventListener('click', async ()=>{
+      if(!state.links.length){ show('No hay enlaces'); return }
+      try{ await navigator.clipboard.writeText(state.links.map(l=>l.url).join('\n')); show('Enlaces copiados') }
+      catch{ show('No se pudo copiar (permiso navegador)') }
+    })
+
+    $('btnExportLinks').addEventListener('click', ()=>{
+      if(!state.links.length){ show('No hay enlaces para exportar'); return }
+      const csv = ['number,url', ...state.links.map(l=>`"${l.number}","${l.url.replace(/"/g,'""')}"`)].join('\n')
+      const blob = new Blob([csv],{type:'text/csv;charset=utf-8'})
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href=url; a.download='enlaces-whatsapp.csv'; a.click(); URL.revokeObjectURL(url)
+    })
+
+    $('btnOpen').addEventListener('click', ()=>{
+      if(!state.links.length){ show('Genera enlaces primero'); return }
+      const sec = Math.max(1, Number($('interval').value||8));
+      state.links.forEach((l, i)=> setTimeout(()=> window.open(l.url,'_blank'), i*sec*1000))
+      show(`Abriendo ${state.links.length} enlaces cada ${sec}s`)
+    })
+
+    $('btnDownloadBackup').addEventListener('click', ()=>{
+      const payload = { exportedAt: new Date().toISOString(), contacts: state.contacts, template: $('template').value }
+      const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'})
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href=url; a.download='respaldo-whatsapp-masivo.json'; a.click(); URL.revokeObjectURL(url)
+    })
+
+    $('backupInput').addEventListener('change', async (e)=>{
+      const file = e.target.files?.[0]; if(!file) return
+      try{
+        const data = JSON.parse(await file.text())
+        if(!Array.isArray(data.contacts)) throw new Error('Formato inválido')
+        state.contacts = data.contacts.map(c=>({
+          id: c.id || (Date.now()+Math.random()),
+          number: normalizePhone(c.number||''),
+          name: c.name||'', company: c.company||'', identification: c.identification||'', advisor: c.advisor||'',
+          selected: Boolean(c.selected), valid: validPhone(normalizePhone(c.number||''))
+        }))
+        if(typeof data.template==='string') $('template').value = data.template
+        persist(); renderContacts(); renderStats(); show('Respaldo cargado correctamente')
+      } catch {
+        show('No se pudo cargar el respaldo')
+      }
+      e.target.value = ''
+    })
+
+    renderContacts(); renderStats(); renderLinks();
+  </script>
+</body>
+</html>

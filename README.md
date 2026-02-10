@@ -1,21 +1,31 @@
-# React + TypeScript + Vite
+# WhatsApp Masivo - Uso rápido
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este repositorio incluye dos formas de uso:
 
-While this project uses React, Vite supports many popular JS frameworks. [See all the supported frameworks](https://vitejs.dev/guide/#scaffolding-your-first-vite-project).
+1. **App Vite/React** (requiere Node + npm).
+2. **HTML standalone** listo para abrir con doble clic en Windows.
 
-## Deploy Your Own
+## Opción recomendada para uso directo (sin instalar nada)
 
-Deploy your own Vite project with Vercel.
+Usa el archivo:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/vercel/examples/tree/main/framework-boilerplates/vite-react&template=vite-react)
+- `whatsapp-masivo.html`
 
-_Live Example: https://vite-react-example.vercel.app_
+### Pasos en Windows
 
-### Deploying From Your Terminal
+1. Descarga el proyecto zip.
+2. Extrae en una carpeta (por ejemplo `C:\apps\whatsapp-masivo`).
+3. Abre `whatsapp-masivo.html` con Chrome/Edge.
+4. Carga contactos, genera enlaces y usa:
+   - **Descargar respaldo JSON**
+   - **Cargar respaldo**
+   - **Descargar enlaces CSV**
 
-You can deploy your new Vite project with a single command from your terminal using [Vercel CLI](https://vercel.com/download):
+## Opción con Vite/React
 
-```shell
-$ vercel
+```bash
+npm install
+npm run dev
 ```
+
+Luego abre la URL local mostrada por Vite (normalmente `http://localhost:5173`).
