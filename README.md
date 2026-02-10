@@ -1,31 +1,38 @@
-# WhatsApp Masivo - Uso rápido
+# WhatsApp Masivo (solo HTML funcional)
 
-Este repositorio incluye dos formas de uso:
+Este proyecto está preparado para usar **únicamente con HTML** en Windows.
+No necesitas Node, npm ni Vite para usar la herramienta.
 
-1. **App Vite/React** (requiere Node + npm).
-2. **HTML standalone** listo para abrir con doble clic en Windows.
+## Archivos clave
 
-## Opción recomendada para uso directo (sin instalar nada)
+- `index.html` → aplicación principal.
+- `iniciar-en-windows.bat` → ejecuta la app en Windows (recomendado).
+- `whatsapp-masivo.html` → copia equivalente del HTML standalone.
 
-Usa el archivo:
+## Cómo ejecutarlo en Windows (recomendado)
 
-- `whatsapp-masivo.html`
+1. Descarga y extrae el proyecto en una carpeta, por ejemplo:
+   `C:\apps\whatsapp-masivo`
+2. Haz doble clic en:
+   **`iniciar-en-windows.bat`**
+3. Se abrirá automáticamente:
+   `http://localhost:4180/index.html`
 
-### Pasos en Windows
+> Si no tienes Python instalado, el `.bat` intentará abrir `index.html` directo.
 
-1. Descarga el proyecto zip.
-2. Extrae en una carpeta (por ejemplo `C:\apps\whatsapp-masivo`).
-3. Abre `whatsapp-masivo.html` con Chrome/Edge.
-4. Carga contactos, genera enlaces y usa:
-   - **Descargar respaldo JSON**
-   - **Cargar respaldo**
+## Uso básico
+
+1. Agrega contactos manualmente o por bloque de texto.
+2. Escribe/ajusta el mensaje plantilla.
+3. Pulsa **Generar enlaces**.
+4. Usa:
+   - **Abrir en secuencia**
+   - **Copiar enlaces**
    - **Descargar enlaces CSV**
+5. Guarda avance con **Descargar respaldo JSON** y recupéralo con **Cargar respaldo**.
 
-## Opción con Vite/React
+## Solución rápida de problemas en Windows
 
-```bash
-npm install
-npm run dev
-```
-
-Luego abre la URL local mostrada por Vite (normalmente `http://localhost:5173`).
+- Si no abre WhatsApp Web: habilita pop-ups en tu navegador.
+- Si no carga bien por doble clic: usa siempre `iniciar-en-windows.bat`.
+- Si el `.bat` no levanta servidor: instala Python y vuelve a ejecutar.
